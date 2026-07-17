@@ -2,12 +2,59 @@
   "config": {
     "step": {
       "user": {
-        "title": "Outbound Webhooks",
-        "description": "Adds the Send request action so you can build and fire HTTP requests to external APIs from your automations."
+        "title": "Add a webhook preset",
+        "description": "Configure a request once, then fire it from any automation with the Send preset action. Edit it here later and every automation using it updates.",
+        "data": {
+          "name": "Name",
+          "url": "URL",
+          "method": "Method",
+          "headers": "Headers",
+          "payload": "Payload",
+          "content_type": "Content type",
+          "timeout": "Timeout",
+          "verify_ssl": "Verify SSL",
+          "follow_redirects": "Follow redirects"
+        }
+      },
+      "reconfigure": {
+        "title": "Edit webhook preset",
+        "description": "Update this preset. Changes apply to every automation that uses it.",
+        "data": {
+          "name": "Name",
+          "url": "URL",
+          "method": "Method",
+          "headers": "Headers",
+          "payload": "Payload",
+          "content_type": "Content type",
+          "timeout": "Timeout",
+          "verify_ssl": "Verify SSL",
+          "follow_redirects": "Follow redirects"
+        }
+      },
+      "auth": {
+        "title": "Authentication",
+        "description": "How should this request authenticate?",
+        "data": {
+          "auth_type": "Authentication"
+        }
+      },
+      "credential": {
+        "title": "Credential",
+        "description": "The token sent as a Bearer header or the X-API-Key value.",
+        "data": {
+          "credential": "API key / token"
+        }
+      },
+      "basic": {
+        "title": "Basic authentication",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
       }
     },
     "abort": {
-      "already_configured": "Outbound Webhooks is already set up."
+      "reconfigure_successful": "Preset updated."
     }
   },
   "services": {
@@ -54,6 +101,16 @@
         "follow_redirects": {
           "name": "Follow redirects",
           "description": "Follow HTTP redirects."
+        }
+      }
+    },
+    "send_preset": {
+      "name": "Send preset",
+      "description": "Sends a saved webhook preset.",
+      "fields": {
+        "preset": {
+          "name": "Preset",
+          "description": "The saved webhook preset to send."
         }
       }
     }

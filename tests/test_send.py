@@ -86,3 +86,38 @@ async def test_send_headers_as_rows(
     headers = aioclient_mock.mock_calls[0][3]
     assert headers["X-Test"] == "abc"
     assert headers["X-Other"] == "123"
+
+
+async def test_send_preset(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    aioclient_mock.post("https://example.com/preset", status=201, text="created")
+
+    preset = MockConfigEntry(
+        domain=DOMAIN,
+        title="My Preset",
+        data={
+            "name": "My Preset",
+            "url": "https://example.com/preset",
+            "method": "POST",
+            "auth_type": "bearer",
+            "credential": "tok",
+            "payload": '{"x": 1}',
+        },
+    )
+    preset.add_to_hass(hass)
+    await hass.config_entries.async_setup(preset.entry_id)
+    await hass.async_block_till_done()
+
+    response = await hass.services.async_call(
+        DOMAIN,
+        "send_preset",
+        {"preset": preset.entry_id},
+        blocking=True,
+        return_response=True,
+    )
+
+    assert response["status"] == 201
+    assert response["body"] == "created"
+    headers = aioclient_mock.mock_calls[0][3]
+    assert headers["Authorization"] == "Bearer tok"

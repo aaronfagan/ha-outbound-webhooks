@@ -83,3 +83,11 @@ send:
       default: true
       selector:
         boolean:
+
+send_preset:
+  fields:
+    preset:
+      required: true
+      selector:
+        config_entry:
+          integration: outbound_webhooks
