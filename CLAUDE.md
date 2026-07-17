@@ -111,6 +111,18 @@ git push origin main && git push origin v0.1.0
 
 Pushing the tag runs `release.yml`, which fails if the tag and `manifest.json` disagree, then cuts a GitHub release. **Patch** for fixes/copy, **minor** for features, **major** for a config-breaking change.
 
+## Getting a change onto Home Assistant
+
+Two tracks - pick by what you're testing:
+
+- **Fast local iteration** (`scripts/dev.sh`): pushes the working tree straight onto VM 100 and restarts Core. No version bump, no release, no HACS. Use this for rapid edit/test loops.
+- **Release + HACS update** (the real user path): HACS only sees **releases**, so a change reaches an installed instance only after a new tag:
+  1. `scripts/version.sh <ver>` then push `main` + the tag - `release.yml` cuts the release.
+  2. In HA: **HACS** - open Outbound Webhooks - **Update** / **Redownload** the new version (HACS shows it once its background check sees the tag; restart HA or wait if it lags).
+  3. **Restart Home Assistant** (integrations need a Core restart), then **hard-refresh the browser** - the frontend caches `services.yaml` selectors.
+
+Either way, a Core restart is required for Python or `services.yaml` changes to take effect.
+
 ## Next step
 
 Design is agreed; the formal spec + implementation plan are the next artifacts (to live under `docs/`). Until then this file is the source of truth for intent.
