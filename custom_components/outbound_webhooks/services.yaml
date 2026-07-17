@@ -18,6 +18,7 @@ send:
             - "PATCH"
             - "DELETE"
     headers:
+      required: true
       selector:
         object:
           multiple: true
@@ -44,16 +45,7 @@ send:
               label: Bearer token
             - value: x_api_key
               label: X-API-Key
-            - value: basic
-              label: Basic
     credential:
-      selector:
-        text:
-          type: password
-    username:
-      selector:
-        text:
-    password:
       selector:
         text:
           type: password

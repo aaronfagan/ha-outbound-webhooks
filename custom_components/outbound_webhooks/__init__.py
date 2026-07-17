@@ -18,7 +18,6 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
-    AUTH_BASIC,
     AUTH_BEARER,
     AUTH_NONE,
     AUTH_TYPES,
@@ -29,11 +28,9 @@ from .const import (
     CONF_FOLLOW_REDIRECTS,
     CONF_HEADERS,
     CONF_METHOD,
-    CONF_PASSWORD,
     CONF_PAYLOAD,
     CONF_TIMEOUT,
     CONF_URL,
-    CONF_USERNAME,
     CONF_VERIFY_SSL,
     DEFAULT_CONTENT_TYPE,
     DEFAULT_METHOD,
@@ -53,8 +50,6 @@ SEND_SCHEMA = vol.Schema(
         vol.Optional(CONF_HEADERS, default=list): vol.Any(dict, list),
         vol.Optional(CONF_AUTH_TYPE, default=AUTH_NONE): vol.In(AUTH_TYPES),
         vol.Optional(CONF_CREDENTIAL): cv.string,
-        vol.Optional(CONF_USERNAME): cv.string,
-        vol.Optional(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_PAYLOAD): cv.string,
         vol.Optional(CONF_CONTENT_TYPE, default=DEFAULT_CONTENT_TYPE): cv.string,
         vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): vol.All(
@@ -76,9 +71,8 @@ def _headers(raw: Any) -> dict[str, str]:
     return result
 
 
-def _auth(data: dict[str, Any]) -> tuple[dict[str, str], aiohttp.BasicAuth | None]:
+def _auth(data: dict[str, Any]) -> dict[str, str]:
     headers: dict[str, str] = {}
-    auth: aiohttp.BasicAuth | None = None
     kind = data[CONF_AUTH_TYPE]
     credential = data.get(CONF_CREDENTIAL)
 
@@ -86,12 +80,8 @@ def _auth(data: dict[str, Any]) -> tuple[dict[str, str], aiohttp.BasicAuth | Non
         headers["Authorization"] = f"Bearer {credential}"
     elif kind == AUTH_X_API_KEY and credential:
         headers[X_API_KEY_HEADER] = credential
-    elif kind == AUTH_BASIC and data.get(CONF_USERNAME) is not None:
-        auth = aiohttp.BasicAuth(
-            data.get(CONF_USERNAME, ""), data.get(CONF_PASSWORD, "")
-        )
 
-    return headers, auth
+    return headers
 
 
 async def _async_send(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
@@ -99,8 +89,7 @@ async def _async_send(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse
     session = async_get_clientsession(hass, verify_ssl=data[CONF_VERIFY_SSL])
 
     headers = _headers(data[CONF_HEADERS])
-    auth_headers, auth = _auth(data)
-    headers.update(auth_headers)
+    headers.update(_auth(data))
 
     body = data.get(CONF_PAYLOAD)
     if body is not None:
@@ -112,7 +101,6 @@ async def _async_send(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse
             data[CONF_URL],
             headers=headers or None,
             data=body,
-            auth=auth,
             allow_redirects=data[CONF_FOLLOW_REDIRECTS],
             timeout=aiohttp.ClientTimeout(total=data[CONF_TIMEOUT]),
         ) as response:

@@ -46,7 +46,7 @@ The fields render as form inputs in the visual editor - you never have to touch 
 | **URL** | Where to send the request (templates allowed) |
 | **Method** | GET / POST / PUT / PATCH / DELETE |
 | **Headers** | Extra request headers |
-| **Authentication** | None, Bearer, X-API-Key, or Basic |
+| **Authentication** | None, Bearer, or X-API-Key |
 | **Payload** | The request body (templates allowed) |
 | **Content type** | Content-Type for the body |
 | **Timeout** | Seconds before giving up (default 10) |
