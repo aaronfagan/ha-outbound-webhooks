@@ -1,0 +1,19 @@
+repository:
+  name: 'ha-outbound-webhooks'
+  description: 'Home Assistant - Outbound Webhooks'
+  homepage: ''
+  default_branch: 'main'
+  private: true
+  has_issues: true
+  has_wiki: false
+  has_downloads: false
+  has_projects: false
+  allow_squash_merge: true
+  allow_merge_commit: true
+  allow_rebase_merge: true
+
+labels:
+  - name: 'bug'
+    color: 'CC0000'
+  - name: 'feature'
+    color: '336699'

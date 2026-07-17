@@ -1,0 +1,14 @@
+{
+  "domain": "outbound_webhooks",
+  "name": "Outbound Webhooks",
+  "codeowners": [
+    "@aaronfagan"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/aaronfagan/ha-outbound-webhooks",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/aaronfagan/ha-outbound-webhooks/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

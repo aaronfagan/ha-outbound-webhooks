@@ -1,0 +1,77 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Outbound Webhooks",
+        "description": "Adds the Send request action so you can build and fire HTTP requests to external APIs from your automations."
+      }
+    },
+    "abort": {
+      "already_configured": "Outbound Webhooks is already set up."
+    }
+  },
+  "services": {
+    "send": {
+      "name": "Send request",
+      "description": "Sends an HTTP request to an external URL.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "The endpoint to send the request to."
+        },
+        "method": {
+          "name": "Method",
+          "description": "The HTTP method."
+        },
+        "headers": {
+          "name": "Headers",
+          "description": "Additional request headers as key/value pairs."
+        },
+        "auth_type": {
+          "name": "Authentication",
+          "description": "How to authenticate the request."
+        },
+        "token": {
+          "name": "Bearer token",
+          "description": "Token sent as an Authorization: Bearer header."
+        },
+        "api_key_header": {
+          "name": "API key header",
+          "description": "Header name to carry the API key."
+        },
+        "api_key_value": {
+          "name": "API key",
+          "description": "Value sent in the API key header."
+        },
+        "username": {
+          "name": "Username",
+          "description": "Username for Basic authentication."
+        },
+        "password": {
+          "name": "Password",
+          "description": "Password for Basic authentication."
+        },
+        "payload": {
+          "name": "Payload",
+          "description": "The request body."
+        },
+        "content_type": {
+          "name": "Content type",
+          "description": "The Content-Type header for the body."
+        },
+        "timeout": {
+          "name": "Timeout",
+          "description": "Seconds to wait before giving up."
+        },
+        "verify_ssl": {
+          "name": "Verify SSL",
+          "description": "Verify the server's TLS certificate."
+        },
+        "follow_redirects": {
+          "name": "Follow redirects",
+          "description": "Follow HTTP redirects."
+        }
+      }
+    }
+  }
+}

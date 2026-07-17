@@ -1,0 +1,80 @@
+send:
+  fields:
+    url:
+      required: true
+      example: "https://api.example.com/hook"
+      selector:
+        template:
+    method:
+      default: POST
+      selector:
+        select:
+          options:
+            - "GET"
+            - "POST"
+            - "PUT"
+            - "PATCH"
+            - "DELETE"
+    headers:
+      selector:
+        object:
+    auth_type:
+      default: none
+      selector:
+        select:
+          options:
+            - value: none
+              label: None
+            - value: bearer
+              label: Bearer token
+            - value: x_api_key
+              label: X-API-Key
+            - value: basic
+              label: Basic
+    token:
+      selector:
+        text:
+          type: password
+    api_key_header:
+      default: X-API-Key
+      selector:
+        text:
+    api_key_value:
+      selector:
+        text:
+          type: password
+    username:
+      selector:
+        text:
+    password:
+      selector:
+        text:
+          type: password
+    payload:
+      selector:
+        template:
+    content_type:
+      default: application/json
+      selector:
+        select:
+          custom_value: true
+          options:
+            - application/json
+            - application/x-www-form-urlencoded
+            - text/plain
+    timeout:
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 300
+          unit_of_measurement: seconds
+          mode: box
+    verify_ssl:
+      default: true
+      selector:
+        boolean:
+    follow_redirects:
+      default: true
+      selector:
+        boolean:

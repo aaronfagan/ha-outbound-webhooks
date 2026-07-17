@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The tag and the manifest must agree
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest=$(jq -r '.version' custom_components/outbound_webhooks/manifest.json)
+
+          echo "tag=${tag} manifest=${manifest}"
+
+          if [ "${tag}" != "${manifest}" ]; then
+            echo "::error::Version mismatch. Run scripts/version.sh ${tag} and commit before tagging."
+            exit 1
+          fi
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${GITHUB_REF_NAME}" --generate-notes
