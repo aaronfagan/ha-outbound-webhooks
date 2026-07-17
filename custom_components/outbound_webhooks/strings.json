@@ -82,6 +82,14 @@
           "name": "API key / token",
           "description": "Used as the Bearer token or the X-API-Key value, depending on the authentication type."
         },
+        "username": {
+          "name": "Username",
+          "description": "Username for Basic authentication."
+        },
+        "password": {
+          "name": "Password",
+          "description": "Password for Basic authentication."
+        },
         "payload": {
           "name": "Payload",
           "description": "The request body."

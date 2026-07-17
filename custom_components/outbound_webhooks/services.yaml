@@ -41,11 +41,22 @@ send:
           options:
             - value: none
               label: None
+            - value: basic
+              label: Basic
             - value: bearer
               label: Bearer
             - value: x_api_key
               label: X-API-Key
     credential:
+      required: true
+      selector:
+        text:
+          type: password
+    username:
+      required: true
+      selector:
+        text:
+    password:
       required: true
       selector:
         text:
