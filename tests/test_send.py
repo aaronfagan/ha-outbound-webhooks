@@ -59,3 +59,30 @@ async def test_send_bearer_auth_header(
     assert aioclient_mock.call_count == 1
     headers = aioclient_mock.mock_calls[0][3]
     assert headers["Authorization"] == "Bearer secret-token"
+
+
+async def test_send_headers_as_rows(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    aioclient_mock.post("https://example.com/hook", status=200, text="ok")
+
+    await _setup(hass)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SEND,
+        {
+            "url": "https://example.com/hook",
+            "method": "POST",
+            "headers": [
+                {"key": "X-Test", "value": "abc"},
+                {"key": "X-Other", "value": "123"},
+            ],
+        },
+        blocking=True,
+        return_response=True,
+    )
+
+    headers = aioclient_mock.mock_calls[0][3]
+    assert headers["X-Test"] == "abc"
+    assert headers["X-Other"] == "123"

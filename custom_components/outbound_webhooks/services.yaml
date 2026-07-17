@@ -18,6 +18,17 @@ send:
     headers:
       selector:
         object:
+          multiple: true
+          label_field: key
+          fields:
+            key:
+              label: Key
+              selector:
+                text:
+            value:
+              label: Value
+              selector:
+                text:
     auth_type:
       default: none
       selector:

@@ -52,7 +52,7 @@ SEND_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_URL): cv.string,
         vol.Optional(CONF_METHOD, default=DEFAULT_METHOD): vol.In(METHODS),
-        vol.Optional(CONF_HEADERS, default=dict): {cv.string: cv.string},
+        vol.Optional(CONF_HEADERS, default=list): vol.Any(dict, list),
         vol.Optional(CONF_AUTH_TYPE, default=AUTH_NONE): vol.In(AUTH_TYPES),
         vol.Optional(CONF_TOKEN): cv.string,
         vol.Optional(CONF_API_KEY_HEADER, default=DEFAULT_API_KEY_HEADER): cv.string,
@@ -68,6 +68,16 @@ SEND_SCHEMA = vol.Schema(
         vol.Optional(CONF_FOLLOW_REDIRECTS, default=True): cv.boolean,
     }
 )
+
+
+def _headers(raw: Any) -> dict[str, str]:
+    if isinstance(raw, dict):
+        return {str(key): str(value) for key, value in raw.items()}
+    result: dict[str, str] = {}
+    for row in raw or []:
+        if isinstance(row, dict) and row.get("key"):
+            result[str(row["key"])] = str(row.get("value", ""))
+    return result
 
 
 def _auth(data: dict[str, Any]) -> tuple[dict[str, str], aiohttp.BasicAuth | None]:
@@ -91,7 +101,7 @@ async def _async_send(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse
     data = call.data
     session = async_get_clientsession(hass, verify_ssl=data[CONF_VERIFY_SSL])
 
-    headers = dict(data[CONF_HEADERS])
+    headers = _headers(data[CONF_HEADERS])
     auth_headers, auth = _auth(data)
     headers.update(auth_headers)
 
