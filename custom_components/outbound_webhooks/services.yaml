@@ -6,9 +6,11 @@ send:
       selector:
         text:
     method:
-      default: POST
+      required: true
+      default: GET
       selector:
         select:
+          mode: dropdown
           options:
             - "GET"
             - "POST"
@@ -30,9 +32,11 @@ send:
               selector:
                 text:
     auth_type:
+      required: true
       default: none
       selector:
         select:
+          mode: dropdown
           options:
             - value: none
               label: None
@@ -42,15 +46,7 @@ send:
               label: X-API-Key
             - value: basic
               label: Basic
-    token:
-      selector:
-        text:
-          type: password
-    api_key_header:
-      default: X-API-Key
-      selector:
-        text:
-    api_key_value:
+    credential:
       selector:
         text:
           type: password

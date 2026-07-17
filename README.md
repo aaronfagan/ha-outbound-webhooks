@@ -26,7 +26,7 @@ actions:
       url: "https://api.example.com/v1/events"
       method: POST
       auth_type: bearer
-      token: !secret my_api_token
+      credential: !secret my_api_token
       content_type: application/json
       payload: '{"event": "{{ trigger.id }}", "at": "{{ now().isoformat() }}"}'
     response_variable: result

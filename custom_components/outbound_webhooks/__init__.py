@@ -23,27 +23,25 @@ from .const import (
     AUTH_NONE,
     AUTH_TYPES,
     AUTH_X_API_KEY,
-    CONF_API_KEY_HEADER,
-    CONF_API_KEY_VALUE,
     CONF_AUTH_TYPE,
     CONF_CONTENT_TYPE,
+    CONF_CREDENTIAL,
     CONF_FOLLOW_REDIRECTS,
     CONF_HEADERS,
     CONF_METHOD,
     CONF_PASSWORD,
     CONF_PAYLOAD,
     CONF_TIMEOUT,
-    CONF_TOKEN,
     CONF_URL,
     CONF_USERNAME,
     CONF_VERIFY_SSL,
-    DEFAULT_API_KEY_HEADER,
     DEFAULT_CONTENT_TYPE,
     DEFAULT_METHOD,
     DEFAULT_TIMEOUT,
     DOMAIN,
     METHODS,
     SERVICE_SEND,
+    X_API_KEY_HEADER,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,9 +52,7 @@ SEND_SCHEMA = vol.Schema(
         vol.Optional(CONF_METHOD, default=DEFAULT_METHOD): vol.In(METHODS),
         vol.Optional(CONF_HEADERS, default=list): vol.Any(dict, list),
         vol.Optional(CONF_AUTH_TYPE, default=AUTH_NONE): vol.In(AUTH_TYPES),
-        vol.Optional(CONF_TOKEN): cv.string,
-        vol.Optional(CONF_API_KEY_HEADER, default=DEFAULT_API_KEY_HEADER): cv.string,
-        vol.Optional(CONF_API_KEY_VALUE): cv.string,
+        vol.Optional(CONF_CREDENTIAL): cv.string,
         vol.Optional(CONF_USERNAME): cv.string,
         vol.Optional(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_PAYLOAD): cv.string,
@@ -84,11 +80,12 @@ def _auth(data: dict[str, Any]) -> tuple[dict[str, str], aiohttp.BasicAuth | Non
     headers: dict[str, str] = {}
     auth: aiohttp.BasicAuth | None = None
     kind = data[CONF_AUTH_TYPE]
+    credential = data.get(CONF_CREDENTIAL)
 
-    if kind == AUTH_BEARER and data.get(CONF_TOKEN):
-        headers["Authorization"] = f"Bearer {data[CONF_TOKEN]}"
-    elif kind == AUTH_X_API_KEY and data.get(CONF_API_KEY_VALUE):
-        headers[data[CONF_API_KEY_HEADER]] = data[CONF_API_KEY_VALUE]
+    if kind == AUTH_BEARER and credential:
+        headers["Authorization"] = f"Bearer {credential}"
+    elif kind == AUTH_X_API_KEY and credential:
+        headers[X_API_KEY_HEADER] = credential
     elif kind == AUTH_BASIC and data.get(CONF_USERNAME) is not None:
         auth = aiohttp.BasicAuth(
             data.get(CONF_USERNAME, ""), data.get(CONF_PASSWORD, "")

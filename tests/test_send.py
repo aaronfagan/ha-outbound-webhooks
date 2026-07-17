@@ -50,7 +50,7 @@ async def test_send_bearer_auth_header(
             "url": "https://example.com/data",
             "method": "GET",
             "auth_type": "bearer",
-            "token": "secret-token",
+            "credential": "secret-token",
         },
         blocking=True,
         return_response=True,

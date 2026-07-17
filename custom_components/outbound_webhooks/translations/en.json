@@ -25,23 +25,15 @@
         },
         "headers": {
           "name": "Headers",
-          "description": "Additional request headers as key/value pairs."
+          "description": "Additional request headers as key/value rows."
         },
         "auth_type": {
           "name": "Authentication",
           "description": "How to authenticate the request."
         },
-        "token": {
-          "name": "Bearer token",
-          "description": "Token sent as an Authorization: Bearer header."
-        },
-        "api_key_header": {
-          "name": "API key header",
-          "description": "Header name to carry the API key."
-        },
-        "api_key_value": {
-          "name": "API key",
-          "description": "Value sent in the API key header."
+        "credential": {
+          "name": "API key / token",
+          "description": "Used as the Bearer token or the X-API-Key value, depending on the authentication type."
         },
         "username": {
           "name": "Username",
