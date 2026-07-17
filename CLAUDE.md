@@ -2,127 +2,107 @@
 
 **Outbound Webhooks** - a Home Assistant custom integration that adds drag/drop actions to the Automation builder for sending configured HTTP requests (webhooks) to external APIs.
 
-It fills a real gap: Home Assistant can only send outbound HTTP via `rest_command`, which is YAML-only and appears in the visual editor as a raw data blob. This integration registers proper actions with `services.yaml` selectors, so the whole request (URL, method, headers, auth, body) is configured with form fields in the builder - no YAML.
+It fills a real gap: HA can only send outbound HTTP via `rest_command`, which is YAML-only and shows in the visual editor as a raw data blob. This integration registers proper actions with `services.yaml` selectors, so the whole request is configured with form fields in the builder - no YAML.
 
-Status: greenfield. Repo `aaronfagan/ha-outbound-webhooks`, **private until tested** on the HAOS VM.
+## Current status (resume here)
+
+- **Public** repo `aaronfagan/ha-outbound-webhooks` (dev; not submitted/advertised anywhere yet).
+- **v0.2.0 shipped** and running on Aaron's HAOS VM. CI fully green (hassfest + hacs/action + pytest).
+- Built: both actions, presets with a config-flow wizard + reconfigure, full auth, brand icon, README.
+
+**Still TODO (the "publishing" work):**
+1. **`home-assistant/brands` PR** under `custom_integrations/outbound_webhooks/` - REQUIRED for the icon to actually render on the Devices & Services page. The local `brand/` assets only satisfy HACS *validation*; the displayed icon comes from the brands CDN. Needs an optimized PNG (no optimizer installed locally yet - `brew install oxipng` or similar first).
+2. **HACS default-store submission PR** (a PR to the HACS repo). "Tomorrow's problem" per Aaron.
+3. **Broader tests** - config-flow tests, auth/error paths (only `send`/`send_preset` happy-path tests exist).
+4. Deferred feature: per-call templating for `send_preset` (pass `data` to fill `{{ }}` placeholders). Presets are static today by choice (YAGNI).
 
 ## Why an integration, not an add-on
 
-Do not relitigate this. An **add-on** is a separate Docker container; it can talk to HA over MQTT or the API but **cannot register an action into the visual Automation builder**. Only an **integration** (Python running inside HA Core) can register services/actions whose `services.yaml` selectors render as form fields in the editor. That builder step is the entire point, so this is an integration. (Aaron's `ha-airprint` repo is the reference - it has both halves; we mirror only its `custom_components/airprint/` integration half.)
+Do not relitigate. An **add-on** is a separate Docker container; it can't register an action into the visual Automation builder. Only an **integration** (Python in HA Core) can register services whose `services.yaml` selectors render as builder form fields. Aaron's `ha-airprint` repo is the reference - we mirror its `custom_components/airprint/` integration half.
 
 ## Naming
 
 - Domain `outbound_webhooks`, display name **Outbound Webhooks**.
-- **Not "curl":** curl is a trademarked project; naming it that implies affiliation and would be rejected by the `home-assistant/brands` repo and core review. We model the *feature surface* on curl and use "works like a curl" as the docs framing, but the name is distinct.
-- **Not "webhook":** `webhook` is a reserved core domain and means the *inbound* direction (automations trigger on an incoming webhook to HA). "Outbound" disambiguates and avoids the collision.
+- **Not "curl":** trademarked; would be rejected by brands/core. We model the feature surface on curl ("works like a curl") but the name is distinct.
+- **Not "webhook":** reserved core domain, and it means the *inbound* direction. "Outbound" disambiguates.
 
 ## Distribution goals
 
-Build to **core-contribution quality**, ship via **HACS as the minimum**:
+Build to core-contribution quality, ship via HACS as the minimum: custom-repository (works now) → HACS default store (near-term) → HA Core (stretch; core may resist a generic HTTP sender given `rest_command`). This imposes: config flow, `hassfest` + `hacs/action` CI, `manifest.json` version, `hacs.json`, tagged releases, README + MIT license, brands PR, tests.
 
-- **HACS custom repository** - installable by pasting the GitHub URL. Works day one.
-- **HACS default store** - a PR to the HACS repo; needs passing structure/manifest/brands/releases validation. The near-term target.
-- **Home Assistant Core** - stretch goal. Highest bar (quality scale, tests, config flow, brands PR, review). Honest caveat: core may resist a generic HTTP sender given `rest_command` exists, so core is aspirational, not the launch plan.
-
-Requirements this imposes (build them in from the start): a config flow, `hassfest` + `hacs/action` CI, `manifest.json` with `version`, `hacs.json`, tagged releases, README + OSI license, a `home-assistant/brands` PR (icon/logo), and tests.
-
-## Architecture
+## Architecture (as built)
 
 ### Two actions
 
-- **`outbound_webhooks.send`** - generic one-off request. Selectors: `url` (template), `method` (GET/POST/PUT/PATCH/DELETE), `headers` (key/value, template), `auth` (`none`/`bearer`/`x_api_key`/`basic` + conditional credential fields), `payload` (template) + `content_type` (application/json, x-www-form-urlencoded, text/plain, custom), `timeout` (default 10s), `verify_ssl` (default on), `follow_redirects`. Returns `{status, headers, body}` via `response_variable` (`SupportsResponse.OPTIONAL` - capture or fire-and-forget).
-- **`outbound_webhooks.send_preset`** - pick a saved preset via a `ConfigEntrySelector` dropdown, plus a `data` object whose values fill `{{ }}` placeholders in the preset's stored URL/headers/body, plus optional inline overrides.
+- **`outbound_webhooks.send`** - generic one-off. Flat form (see the HA-UI gotchas - action forms can't be conditional): `url` (text), `method` (dropdown, default GET), `headers` (key/value rows), `auth_type` (None/Basic/Bearer/X-API-Key), `credential` + `username` + `password` (all present, empty when unused), `payload` (template), `content_type`, `timeout`, `verify_ssl`, `follow_redirects`. Every field is `required: true` (that's how the optional-field checkbox is suppressed; empties still submit). Returns `{status, headers, body}` via `response_variable` (`SupportsResponse.OPTIONAL`).
+- **`outbound_webhooks.send_preset`** - one field, `preset` (a `config_entry` selector = dropdown of saved presets). Sends that preset's stored config **as-is** (static; no per-call data yet). Same response shape.
 
 ### Presets = config-entry-per-preset
 
-Each preset is its own config entry, added via **Settings → Devices & Services → Add Integration → Outbound Webhooks** ("add another" for more). This is deliberate: entry-per-preset is what makes the `ConfigEntrySelector` dropdown work in the builder. (Subentries, as `ha-airprint` uses for printers, have no builder selector, so they lose the drag/drop pick.)
+Each preset is its own config entry (that's what makes the `config_entry` selector a clean dropdown; subentries have no builder selector). Added via **Settings → Devices & Services → Add Integration → Outbound Webhooks** ("Add another" for more). A preset stores the full request incl. auth + credentials in the entry's `.storage` (out of automation YAML).
 
-A preset stores: name, url, method, headers, auth type + **credentials** (Bearer token / API key / Basic user+pass), body template, content_type, defaults. **Secrets live in the config entry** (HA `.storage`) - the established UI way, keeping tokens out of YAML.
+- **Config-flow wizard** (`config_flow.py`): `async_step_user` (request) → `async_step_auth` (type) → conditional `async_step_credential` (Bearer/X-API-Key) or `async_step_basic` (username/password), else finish. This multi-step routing is how the *conditional* auth UI is achieved (impossible in the flat action form).
+- **Central editing = Reconfigure** (`async_step_reconfigure`): reopens the wizard pre-filled, `async_update_reload_and_abort`. `send_preset` reads `entry.data` **live at call time**, so an edit propagates to every automation using the preset with no automation changes.
 
-### Auth set
+### Auth
 
-Exactly four: **None, Bearer, X-API-Key, Basic.** Nothing else in MVP.
+**None, Basic, Bearer, X-API-Key** (that order - None first, then alphabetical). Bearer → `Authorization: Bearer <credential>`; X-API-Key → `X-API-Key: <credential>` header; Basic → `aiohttp.BasicAuth(username, password)`. The generic `send` shows all fields flat; presets use the conditional wizard. Labels are aligned across both flows.
 
 ### Implementation notes
 
-- Use HA's shared aiohttp session (`homeassistant.helpers.aiohttp_client.async_get_clientsession`). **No external `requirements`** in the manifest - keeps it light and core-friendly.
-- Templating is free for the generic action: HA renders `{{ }}` in action fields before the integration sees them. For presets, render the stored template against the passed `data` with HA's template engine at call time.
-- Register the generic `send` action on component load (`async_setup`) so it exists even with zero presets.
+- Both actions funnel through `_perform(hass, data)` in `__init__.py`. `_auth()` returns `(headers, BasicAuth|None)`; `_headers()` normalizes either a list of `{key,value}` rows (from the object selector) or a plain dict.
+- Shared aiohttp session (`async_get_clientsession`, honoring `verify_ssl`). **No external `requirements`** in the manifest.
+- Services register in `async_setup_entry` (guarded by `has_service`), removed when the last entry unloads. So they exist once ≥1 config entry (preset) exists.
+- Templating: HA renders `{{ }}` in `send` action fields before the integration sees them (free). Presets don't template yet.
 
-### curl-inspired feature roadmap
+## HA-UI gotchas (learned the hard way)
 
-MVP is the surface above. Later (curl analogs): query-param builder (`--data-urlencode`), multipart/file upload (`-F`), mTLS client certs (`--cert`), cookies (`-b`), retries (`--retry`).
+- **Action forms (`services.yaml`) can't do conditional field visibility** - no show/hide based on another field. Conditional UX only exists in **config flows** (multi-step), which is why full/Basic auth lives in the preset wizard.
+- **Optional fields get an "include" checkbox.** The only way to drop it is `required: true` - and HA still lets you submit a required field empty, so "required" here means "no checkbox, still optional." Every `send` field uses this.
+- **Selector rendering:** `template` and `object` selectors render as *code editors*. Use `text` for single-line values; use `object` with `multiple: true` + `fields` (key/value) for header rows.
+- **The "Response variable" toggle is core HA**, shown for any response-capable action. Not controllable or removable by the integration.
 
 ## Repo layout
 
 ```
 custom_components/outbound_webhooks/
-  __init__.py         # async_setup: register send + send_preset; per-entry preset setup
-  config_flow.py      # add/edit presets via UI
-  const.py            # DOMAIN, method/auth/content-type constants, defaults
-  manifest.json       # domain, name, config_flow:true, version, codeowners, iot_class
-  services.yaml       # the drag/drop field surface for both actions
-  strings.json
-  translations/en.json
-  brand/              # icon.png + logo.png (for the brands PR)
-tests/                # pytest-homeassistant-custom-component: config-flow + action tests
-.github/
-  settings.yml        # repo settings-as-code (adapted from ha-airprint)
-  FUNDING.yml
-  workflows/ci.yml    # compileall + hassfest + hacs/action (no Docker)
-  workflows/release.yml  # tag==manifest version check + gh release (no GHCR)
-hacs.json             # {name:"Outbound Webhooks", content_in_root:false, render_readme:true}
-scripts/dev.sh        # push integration to HAOS VM + restart HA Core
-scripts/version.sh    # bump manifest version, commit, tag
-LICENSE  README.md  CLAUDE.md  .gitignore
+  __init__.py         # _perform + _auth + _headers; registers send + send_preset in async_setup_entry
+  config_flow.py      # multi-step wizard (request -> auth -> credential/basic) + reconfigure
+  const.py            # DOMAIN, CONF_*, AUTH_* , METHODS, defaults
+  manifest.json       # domain, name, config_flow, integration_type:service, iot_class:cloud_push, version
+  services.yaml       # field surface for send + send_preset
+  strings.json + translations/en.json   # config-flow steps + service field labels (must stay identical)
+  brand/              # icon.svg (source) + icon/icon@2x/logo/logo@2x .png (braces+play mark)
+tests/                # pytest-homeassistant-custom-component (asyncio_mode=auto in pytest.ini)
+.github/workflows/    # ci.yml (compileall + hassfest + hacs/action + pytest), release.yml (tag==manifest -> gh release)
+.github/settings.yml  # repo settings-as-code (private:false, topics via gh)
+hacs.json  LICENSE  README.md  scripts/{dev,version}.sh
 ```
-
-Borrowed from `ha-airprint` (integration half): config-flow patterns, CI gates (`hassfest` + `hacs/action`), the release version-gate, `scripts/version.sh` + `scripts/dev.sh`, `hacs.json`, `.github/settings.yml`. Dropped (add-on-only): the `airprint/` dir, Docker CI, `repository.yaml`, the "versions agree" job (single version source now), shellcheck.
 
 ## Conventions
 
-- **Home Assistant's conventions win.** Sentence-case names, its selectors, its config-flow patterns. If a request conflicts, say so before deviating.
-- **Single version source:** `custom_components/outbound_webhooks/manifest.json` `"version"`. Never hand-edit for a release; use `scripts/version.sh`.
-- **The data model mirrors the UI** - one stored key per field the user sees.
-- **No bundled secrets.** Credentials come from the config flow into `.storage`, never committed.
-- Python: `from __future__ import annotations`, async throughout, type hints, `voluptuous` schemas with HA selectors.
-- **Keep the README current** - any change to actions, fields, or behaviour lands in the README in the same commit. Write for a HA user who wants to fire a webhook from an automation, not for the author.
+- **HA's conventions win** (sentence-case, its selectors, config-flow patterns).
+- **Single version source:** `manifest.json` `"version"`. Never hand-edit for a release; use `scripts/version.sh`.
+- **strings.json and translations/en.json must stay identical** (CI-adjacent; the dev workflow diffs them).
+- **No bundled secrets.** Credentials flow from the config flow into `.storage`.
+- Python: `from __future__ import annotations`, async, type hints, voluptuous + HA selectors.
+- **Keep the README current** - any change to actions/fields/behaviour lands in the README in the same commit.
+- No inline comments (Aaron's global rule); no em-dashes; commit + push finished work (no AI-attribution trailers).
 
-## Testing on the HAOS VM
+## Dev loop + gotchas
 
-The test target is Aaron's Home Assistant OS VM (VM 100 on the `pve` Proxmox host; documented in the `thefagans-ca` repo at `docs/servers/home-assistant-vm.md`). There is no plain SSH into HAOS - reach root + docker through the guest agent:
+Test target: Aaron's HAOS VM 100 on the `pve` Proxmox host (see `thefagans-ca` repo `docs/servers/home-assistant-vm.md`). No plain SSH into HAOS - reach it via `ssh pve` → `qm guest exec 100 -- /bin/sh -c '<cmd>'` (base64 nested quotes).
 
-```bash
-ssh pve
-qm guest exec 100 -- /bin/sh -c '<command>'
-# base64-encode anything with nested quotes
-```
+- **`scripts/dev.sh`** pushes the working tree onto the box and restarts Core. This is the fast loop - no version bump, no HACS. Use it constantly.
+- **The version label LIES during dev.** `dev.sh` doesn't bump the version, so HACS still shows the last release number even though the code is newer. Trust the deployed files, not the number.
+- **Hard-refresh the browser** (Cmd-Shift-R) or use an incognito window after every deploy - the frontend caches `services.yaml` selectors and config-flow forms.
+- **Integration + `services.yaml` changes need a Core restart** (dev.sh does it). Config-flow errors surface only at runtime in HA (CI can't catch them) - so test the wizard on the box.
 
-- **Integration changes only take effect on an HA Core restart** - copying files in is not enough (`ha core restart`).
-- `scripts/dev.sh` pushes `custom_components/outbound_webhooks/` onto the box and restarts Core.
-- Verify against the real thing (add the integration, build a test automation, fire it, capture the response) rather than asserting it works.
-
-## Releasing
+## Releasing (real user path)
 
 ```bash
-scripts/version.sh 0.1.0     # sets manifest version, commits, tags v0.1.0
-git push origin main && git push origin v0.1.0
+scripts/version.sh <ver>            # sets manifest version, commits, tags v<ver>
+git push origin main && git push origin v<ver>
 ```
 
-Pushing the tag runs `release.yml`, which fails if the tag and `manifest.json` disagree, then cuts a GitHub release. **Patch** for fixes/copy, **minor** for features, **major** for a config-breaking change.
-
-## Getting a change onto Home Assistant
-
-Two tracks - pick by what you're testing:
-
-- **Fast local iteration** (`scripts/dev.sh`): pushes the working tree straight onto VM 100 and restarts Core. No version bump, no release, no HACS. Use this for rapid edit/test loops.
-- **Release + HACS update** (the real user path): HACS only sees **releases**, so a change reaches an installed instance only after a new tag:
-  1. `scripts/version.sh <ver>` then push `main` + the tag - `release.yml` cuts the release.
-  2. In HA: **HACS** - open Outbound Webhooks - **Update** / **Redownload** the new version (HACS shows it once its background check sees the tag; restart HA or wait if it lags).
-  3. **Restart Home Assistant** (integrations need a Core restart), then **hard-refresh the browser** - the frontend caches `services.yaml` selectors.
-
-Either way, a Core restart is required for Python or `services.yaml` changes to take effect.
-
-## Next step
-
-Design is agreed; the formal spec + implementation plan are the next artifacts (to live under `docs/`). Until then this file is the source of truth for intent.
+`release.yml` fails if tag != manifest, then cuts a GitHub release. HACS only sees releases: in HA, HACS → Outbound Webhooks → Update → restart → hard-refresh. **Patch** for fixes/copy, **minor** for features, **major** for a config-breaking change. Current release: **v0.2.0**.
