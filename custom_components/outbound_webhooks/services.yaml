@@ -4,7 +4,7 @@ send:
       required: true
       example: "https://api.example.com/hook"
       selector:
-        template:
+        text:
     method:
       default: POST
       selector:
