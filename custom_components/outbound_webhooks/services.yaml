@@ -42,7 +42,7 @@ send:
             - value: none
               label: None
             - value: bearer
-              label: Bearer token
+              label: Bearer
             - value: x_api_key
               label: X-API-Key
     credential:

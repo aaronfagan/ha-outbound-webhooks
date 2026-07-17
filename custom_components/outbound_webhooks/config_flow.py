@@ -55,9 +55,9 @@ CONTENT_TYPES = [
 
 AUTH_OPTIONS = [
     SelectOptionDict(value=AUTH_NONE, label="None"),
-    SelectOptionDict(value=AUTH_BEARER, label="Bearer token"),
-    SelectOptionDict(value=AUTH_X_API_KEY, label="X-API-Key"),
     SelectOptionDict(value=AUTH_BASIC, label="Basic"),
+    SelectOptionDict(value=AUTH_BEARER, label="Bearer"),
+    SelectOptionDict(value=AUTH_X_API_KEY, label="X-API-Key"),
 ]
 
 _HEADER_FIELDS = {
