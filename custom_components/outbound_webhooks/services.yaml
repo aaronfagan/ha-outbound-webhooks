@@ -46,13 +46,16 @@ send:
             - value: x_api_key
               label: X-API-Key
     credential:
+      required: true
       selector:
         text:
           type: password
     payload:
+      required: true
       selector:
         template:
     content_type:
+      required: true
       default: application/json
       selector:
         select:
@@ -62,6 +65,7 @@ send:
             - application/x-www-form-urlencoded
             - text/plain
     timeout:
+      required: true
       default: 10
       selector:
         number:
@@ -70,10 +74,12 @@ send:
           unit_of_measurement: seconds
           mode: box
     verify_ssl:
+      required: true
       default: true
       selector:
         boolean:
     follow_redirects:
+      required: true
       default: true
       selector:
         boolean:
